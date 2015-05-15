@@ -1,0 +1,31 @@
+<!doctype HTML>
+<html>
+    <head>
+		<title>GeckoCast</title>
+		<style>
+			html, body { margin: 0; padding: 0; overflow: hidden; }
+			iframe { position: absolute; top: 0; left: 0; width: 1920px; height: 1080px; border: 0; -webkit-transform-origin: 0 0; }
+		</style>
+    </head>
+	<body>
+		<iframe src="" scrolling="no" width="1920" height="1080"></iframe>
+        <script type="text/javascript" src="//www.gstatic.com/cast/sdk/libs/receiver/2.0.0/cast_receiver.js"></script>
+        <script>
+            (function() {
+                var
+                iframe  =   document.querySelector('iframe'),
+                scaleX  =   document.documentElement.clientWidth / iframe.clientWidth,
+                scaleY  =   document.documentElement.clientHeight / iframe.clientHeight;
+
+                iframe.style.webkitTransform    =   'scale(' + scaleX + ',' + scaleY +')';
+
+                window.onload   =   function() {
+                    cast.receiver.logger.setLevelValue(0);
+
+                    window.castReceiverManager = cast.receiver.CastReceiverManager.getInstance();
+                    castReceiverManager.start();
+                };
+            })();
+        </script>
+	</body>
+</html>

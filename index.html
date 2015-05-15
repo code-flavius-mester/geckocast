@@ -1,0 +1,145 @@
+<!doctype HTML>
+<html>
+    <head>
+        <title>GeckoCast</title>
+        <style>
+            @-webkit-keyframes slideDown {
+                from {
+                    -webkit-transform: translateY(-20px);
+                }
+                to {
+                    -webkit-transform: translateY(0);
+                }
+            }
+            @keyframes slideDown {
+                from {
+                    transform: translateY(-20px);
+                }
+                to {
+                    transform: translateY(0);
+                }
+            }
+            html,
+            body {
+                background: #555;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+            body {
+                background: #555 url('cast-icon.svg') no-repeat center center;
+                background-size: 540px 410px;
+                color: #ccc;
+                opacity: 0;
+                -webkit-transition: background-color 0.2s, color 0.2s, opacity 0.4s;
+                        transition: background-color 0.2s, color 0.2s, opacity 0.4s;
+            }
+            .error body {
+                background-color: #000;
+                background-image: none;
+                color: #c00;
+                opacity: 1;
+            }
+            .ready body {
+                opacity: 1;
+                -webkit-animation: slideDown 0.6s 1;
+                        animation: slideDown 0.6s 1;
+            }
+            #helper {
+                font-size: 32px;
+                text-align: center;
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                padding: 0;
+                margin: 1em;
+            }
+        </style>
+    </head>
+    <body data-application-id="">
+        <p id="helper">Click the Cast icon in Chrome's toolbar to get started</p>
+        <script type="text/javascript" src="//www.gstatic.com/cv/js/sender/v1/cast_sender.js"></script>
+        <script>
+            (function(chrome) {
+                var
+                applicationID   =   document.body.getAttribute('data-application-id'),
+                namespace       =   'urn:x-cast:io.dryan.geckocast',
+                session         =   null,
+                tries           =   0,
+                helper          =   document.getElementById('helper');
+
+                function init() {
+                    tries++;
+                    if(tries > 20) {
+                        // bail
+                        document.documentElement.className  =   'error';
+                        helper.innerHTML                    =   'There was a problem setting up the Chromecast connection';
+                        return;
+                    }
+                    if(!chrome || !chrome.cast || !chrome.cast.isAvailable) {
+                        setTimeout(init, 100);
+                        return;
+                    }
+                    document.documentElement.className      =   'ready';
+                    var
+                    sessionRequest  =   new chrome.cast.SessionRequest(applicationID),
+                    apiConfig       =   new chrome.cast.ApiConfig(
+                                                sessionRequest,
+                                                sessionListener,
+                                                function(e) {
+                                                    if(e === 'available') {
+                                                        window.console.log('receiver found');
+                                                    } else {
+                                                        window.console.error('receiver list empty');
+                                                    }
+                                                },
+                                                chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+                                                // chrome.cast.DefaultActionPolicy.CAST_THIS_TAB
+                                        );
+
+                    chrome.cast.initialize(apiConfig, onInitSuccess, onError);
+                    window.console.debug(apiConfig);
+                }
+
+                window.onload   =   init;
+
+                function onInitSuccess() {
+                    window.console.log('onInitSuccess');
+                }
+
+                function onError(message) {
+                    window.console.error(message);
+                }
+
+                function onSuccess(message) {
+                    window.console.log(message);
+                }
+
+                function sessionListener(e) {
+                    window.console.log('New session ID: ' + e.sessionId);
+                    session     =   e;
+                    session.addUpdateListener(sessionUpdateListener);
+                    session.addMessageListener(namespace, function(ns, message) {
+                        window.console.log('receiverMessage: ' + ns + ', ' + message);
+                    });
+                }
+
+                function sessionUpdateListener(isAlive) {
+                    var
+                    message     =   isAlive ? 'Session Updated' : 'Session Removed';
+                    message     +=  ': ' + session.sessionId;
+                    window.console.log(message);
+
+                    if(!isAlive) {
+                        session     =   null;
+                    }
+                }
+
+                function stopApp() {
+                    session.stop(function() {
+                        window.console.log('onStopAppSuccess');
+                    }, onError);
+                }
+
+            })(window.chrome);
+        </script>
+    </body>
+</html>
